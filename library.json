@@ -1,0 +1,22 @@
+ {
+  "name": "gob_json",
+  "description": "A memory efficient library to parse (large) JSON objects from HTTP or HTTPS on embedded devices. Implements a number of improvements over the original json-streaming-parser2 library but is not backwards compatible.",
+  "keywords": "json, streaming-json",
+  "authors": {
+    "name": "GOB",
+    "url": "https://github.com/GOB52",
+    "maintainer": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GOB52/gob_json.git"
+  },
+  "version": "0.0.0",
+  "build": {
+    "libArchive": false
+  },
+  "headers": "gob_json.hpp",
+  "license": "MIT",
+  "platforms": "espressif32",
+  "frameworks": "arduino"
+}
