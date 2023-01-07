@@ -10,11 +10,11 @@
 #include "gob_json_typedef.hpp"
 
 namespace goblib { namespace json {
-/*
+
+/*!
   @class ElementSelector
   @brief Unified element selector.
-  Represents the handle associated to an element within either
-  an object (key) or an array (index). 
+  Represents the handle associated to an element within either an object (key) or an array (index). 
 */
 class ElementSelector
 {
@@ -41,11 +41,10 @@ class ElementSelector
     friend class StreamingParser;
 };
 
-/*
+/*!
   @class ElementPath
   @brief Hierarchical path to currently parsed element.
-  It eases element filtering, keeping track of the current node
-  position.  
+  It eases element filtering, keeping track of the current node position.
 */
 class ElementPath
 {

@@ -11,6 +11,7 @@
 #include "gob_json.hpp"
 #include <cstring>
 #include <cassert>
+#include <algorithm>
 
 namespace goblib { namespace json {
 
@@ -24,25 +25,26 @@ void StreamingParser::reset()
     stackPos = 0;
 }
 
-void StreamingParser::parse(char c)
+void StreamingParser::parse(const char ch)
 {
     assert(handler && "handler must be set");
     if(!handler) { return; }
 
+    const int c = std::is_signed<char>::value ? (unsigned char)ch : ch; // Handling the case where char is signed.
+    
 #ifdef ARDUINO_ARCH_ESP8266	
     yield(); // reduce crashes
-#endif	
-	
+#endif
     //System.out.print(c);
     // valid whitespace characters in JSON (from RFC4627 for JSON) include:
     // space, horizontal tab, line feed or new line, and carriage return.
     // thanks:
     // http://stackoverflow.com/questions/16042274/definition-of-whitespace-in-json
     if ((c == ' ' || c == '\t' || c == '\n' || c == '\r')
-        && !(state == State::IN_STRING || state == State::UNICODE || state == State::START_ESCAPE
-             || state == State::IN_NUMBER || state == State::START_DOCUMENT)) {
+        && !(state == State::IN_STRING || state == State::UNICODE || state == State::START_ESCAPE || state == State::IN_NUMBER)) {
         return;
     }
+
     switch (state) {
     case State::IN_STRING:
         if (c == '"') {
@@ -172,10 +174,11 @@ void StreamingParser::parse(char c)
         }
         break;
     case State::START_DOCUMENT:
-        handler->startDocument();
         if (c == '[') {
+            handler->startDocument();
             startArray();
         } else if (c == '{') {
+            handler->startDocument();
             startObject();
         } else {
             // throw new ParsingError($this->_line_number,

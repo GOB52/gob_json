@@ -18,9 +18,15 @@
 #include "gob_json_element_path.hpp"
 #include "gob_json_element_value.hpp"
 
-/*! @namespace Tope level namespace of mine */
+/*!
+  @namespace goblib
+  @brief Top level namespace of mine
+*/
 namespace goblib {
-/*! @namespace JSON related */
+/*!
+  @namespace json
+  @brief JSON related
+*/
 namespace json {
 
 class Handler;
@@ -36,47 +42,28 @@ class Handler;
 class StreamingParser
 {
   public:
-    enum class State : int8_t
-    {
-        DONE               = -1,
-        START_DOCUMENT,
-        IN_ARRAY,
-        IN_OBJECT,
-        END_KEY,
-        AFTER_KEY,
-        IN_STRING,
-        START_ESCAPE,
-        UNICODE,
-        IN_NUMBER,
-        IN_TRUE,
-        IN_FALSE,
-        IN_NULL,
-        AFTER_VALUE,
-        UNICODE_SURROGATE,
-    };
-
     /*!
       @brief Constructor
       @param handler Handler
      */
     explicit StreamingParser(Handler* h = nullptr) { reset(); setHandler(h); }
 
+    /*! @brief Set handler */
+    void setHandler(Handler* h) { handler = h; }
     /*! Reset inner state.*/
     void reset();
 
     /*! @brief Parse 1 character */
     void parse(const char ch);
     /*! @brief Parse buffer */
-    void parse(const char* buf, size_t len) { while(len--) { parse(*buf++); } }
+    void parse(const char* buf, size_t len)
+    {
+        while(len--) { parse(*buf++); }
+    }
+    /*! @brief Parsing JSON documents recursively */
+    void setRecursively(const bool b) { recursive = b; }
 
-    /*! @brief Set handler */
-    void setHandler(Handler* h) { handler = h; }
-
-    //
-    //    State state() const { return _state; }
-    // bool isEnd() const { return state() == State::DONE; }
-    // void setRecursive(bool b);
-    
+    bool isEnd() const { return state == State::DONE; }
     
   protected:
     void startArray();
@@ -114,6 +101,24 @@ class StreamingParser
     void processUnicodeCharacter(char c);
 
   private:
+    enum class State : int8_t
+    {
+        DONE               = -1,
+        START_DOCUMENT,
+        IN_ARRAY,
+        IN_OBJECT,
+        END_KEY,
+        AFTER_KEY,
+        IN_STRING,
+        START_ESCAPE,
+        UNICODE,
+        IN_NUMBER,
+        IN_TRUE,
+        IN_FALSE,
+        IN_NULL,
+        AFTER_VALUE,
+        UNICODE_SURROGATE,
+    };
     enum class Stack : uint8_t
     {
         OBJECT,
@@ -130,7 +135,7 @@ class StreamingParser
     Stack stack[20]{};
     int stackPos{0};
     
-    bool recursive{false}; // Continue parsing after the document is finished, if true.
+    bool recursive{false};
     bool doEmitWhitespace{false};
 
     char buffer[JSON_PARSER_BUFFER_MAX_LENGTH];
@@ -141,7 +146,8 @@ class StreamingParser
     char unicodeBuffer[10];
     int unicodeBufferPos{0};
     int unicodeHighSurrogate{0};
-    int characterCounter{0};
+
+    size_t characterCounter{0};
 };
 //
 }}
