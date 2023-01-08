@@ -31,8 +31,13 @@ namespace json {
 
 class Handler;
 
-#ifndef JSON_PARSER_BUFFER_MAX_LENGTH
-#define JSON_PARSER_BUFFER_MAX_LENGTH  (256)
+#ifndef GOB_JSON_PARSER_BUFFER_MAX_LENGTH
+# pragma message "Buffer size as default"
+# define GOB_JSON_PARSER_BUFFER_MAX_LENGTH  (256)
+#else
+# define GOB_JSON_STRINGIFY(x) GOB_JSON_STRINGIFY_AGAIN(x)
+# define GOB_JSON_STRINGIFY_AGAIN(x) #x
+# pragma message "Buffer size set by build option=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_BUFFER_MAX_LENGTH)
 #endif
 
 /*!
@@ -63,7 +68,8 @@ class StreamingParser
     /*! @brief Parsing JSON documents recursively */
     void setRecursively(const bool b) { recursive = b; }
 
-    bool isEnd() const { return state == State::DONE; }
+    /*! @brief Any errors? */
+    bool hasError() const { return state == State::ERROR; }
     
   protected:
     void startArray();
@@ -100,10 +106,10 @@ class StreamingParser
     int getHexArrayAsDecimal(char hexArray[], int length);
     void processUnicodeCharacter(char c);
 
-  private:
     enum class State : int8_t
     {
-        DONE               = -1,
+        ERROR = -1,
+        DONE,
         START_DOCUMENT,
         IN_ARRAY,
         IN_OBJECT,
@@ -138,7 +144,7 @@ class StreamingParser
     bool recursive{false};
     bool doEmitWhitespace{false};
 
-    char buffer[JSON_PARSER_BUFFER_MAX_LENGTH];
+    char buffer[GOB_JSON_PARSER_BUFFER_MAX_LENGTH];
     int bufferPos{0};
 
     char unicodeEscapeBuffer[10];

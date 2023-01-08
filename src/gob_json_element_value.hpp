@@ -17,6 +17,9 @@ namespace goblib { namespace json {
 struct ElementValue
 {
   public:
+    using number_t = uintmax_t;
+    using fp_t = double;
+    
     /*! @enum Type Type of value */
     enum class Type : uint8_t
     {
@@ -29,16 +32,16 @@ struct ElementValue
     ///@name Setter
     ///@{
     /*! @brief From integral value */
-    ElementValue with(const long long value)
+    ElementValue with(const number_t value)
     {
         data.numValue = value;
         type = Type::Int;
         return *this;
     }
     /*! @brief From floating-point value */
-    ElementValue with(const double value)
+    ElementValue with(const fp_t value)
     {
-        data.numValue = value;
+        data.floatValue = value;
         type = Type::Float;
         return *this;
     }
@@ -68,9 +71,9 @@ struct ElementValue
     ///@warning Note that I have not checked to see if it is the correct type.
     ///@{
     /*! @brief Get the integer value*/
-    inline long long  getInt() const     { return data.numValue; }
+    inline number_t getInt() const       { return data.numValue;  }
     /*! @brief Get the floating-point value*/
-    inline double getFloat() const       { return data.numValue;}
+    inline fp_t getFloat() const         { return data.floatValue;}
     /*! @brief Get the boolean value*/
     inline bool getBool() const          { return data.boolValue; }
     /*! @brief Get the string value */
@@ -99,11 +102,11 @@ struct ElementValue
         string_t s("?unknown?");
         switch(type)
         {
-        case Type::Int:    s = formatString("%lld", getInt()); break;
-        case Type::Float:  s = formatString("%lf", getFloat()); break;
-        case Type::String: s = formatString("%s", getString()); break;
-        case Type::Bool:   s = getBool() ? "true" : "false"; break;
-        case Type::Null:   s = "null"; break;
+        case Type::Int:    s = formatString("%jd", getInt());    break;
+        case Type::Float:  s = formatString("%f",  getFloat());  break;
+        case Type::String: s = formatString("%s",  getString()); break;
+        case Type::Bool:   s = getBool() ? "true" : "false";     break;
+        case Type::Null:   s = "null";                           break;
         }
         return s;
     }
@@ -112,7 +115,8 @@ struct ElementValue
     union Variant
     {
         bool boolValue;
-        double numValue{};
+        fp_t floatValue{};
+        number_t numValue;
         const char* stringValue;
     };
     Variant data{};

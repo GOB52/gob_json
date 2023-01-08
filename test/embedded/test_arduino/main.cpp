@@ -23,13 +23,19 @@ void setup()
 {
     M5.begin();
 
-    printf("CPP %ld\n", __cplusplus);
-    printf("char is %s\n", std::is_signed<char>::value ? "signed" : "unsigned");
     printf("ESP-IDF Version %d.%d.%d\n",
            (ESP_IDF_VERSION>>16) & 0xFF, (ESP_IDF_VERSION>>8)&0xFF, ESP_IDF_VERSION & 0xFF);
 
-    ::testing::InitGoogleTest();
+    printf("CPP %ld\n", __cplusplus);
 
+    printf("char is %s\n", std::is_signed<char>::value ? "signed" : "unsigned");
+    printf("sizeof uintmax_t %zu, sizeof uint64_t %zu\n", sizeof(uintmax_t), sizeof(uint64_t));
+    printf(" intmax_t: %jd / %jd\n", INTMAX_MIN, INTMAX_MAX);
+    printf("uintmax_t: %ju\n", UINTMAX_MAX);
+    printf("double:%le / %le\n", -DBL_MAX, DBL_MAX);
+  
+    ::testing::InitGoogleTest();
+    
 #ifdef GTEST_FILTER
     ::testing::GTEST_FLAG(filter) = GTEST_FILTER;
 #endif

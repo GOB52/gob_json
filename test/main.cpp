@@ -38,15 +38,18 @@
 __attribute__((weak)) int main(int argc, char **argv)
 {
     printf("CPP %ld\n", __cplusplus);
-    printf("char is %s\n", std::is_signed<char>::value ? "signed" : "unsigned");
 
-    printf("%s\n", "漢字");
-    
+    printf("char is %s\n", std::is_signed<char>::value ? "signed" : "unsigned");
+    printf("sizeof uintmax_t %zu, sizeof uint64_t %zu\n", sizeof(uintmax_t), sizeof(uint64_t));
+    printf(" intmax_t: %jd / %jd\n", INTMAX_MIN, INTMAX_MAX);
+    printf("uintmax_t: %ju\n", UINTMAX_MAX);
+    printf("double:%le / %le\n", -DBL_MAX, DBL_MAX);
+
     testing::InitGoogleTest(&argc, argv);
 
-    #ifdef GTEST_FILTER
+#ifdef GTEST_FILTER
     ::testing::GTEST_FLAG(filter) = GTEST_FILTER;
-    #endif
+#endif
     
     RUN_ALL_TESTS();
     // Always return zero-code and allow PlatformIO to parse results
