@@ -19,7 +19,7 @@ class DelegateHandler : public Handler
 {
   public:
     /*!
-      @sclass Delegater
+      @class Delegater
       @brief Object to delegate parsing
      */
     struct Delegater

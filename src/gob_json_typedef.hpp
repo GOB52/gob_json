@@ -15,7 +15,11 @@
 
 namespace goblib { namespace json {
 
-#ifdef ARDUINO
+/*!
+  @typedef string_t
+  @brief String type. String if Arduino, std::string if other.
+ */
+#if defined(ARDUINO)
 using string_t = String;
 #else
 using string_t = std::string;

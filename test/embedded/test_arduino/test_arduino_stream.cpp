@@ -7,6 +7,8 @@
 using goblib::json::ElementPath;
 using goblib::json::ElementValue;
 
+namespace
+{
 struct TestHandler: public goblib::json::Handler
 {
     virtual void startDocument() override{}
@@ -25,21 +27,20 @@ struct TestHandler: public goblib::json::Handler
     String str;
     int32_t i32;
 };
-
+//
+}
 
 TEST(Arduino, Stream)
 {
     TestHandler handler;
     goblib::json::arduino::Stream stream(&handler);
 
-
     stream.printf(R"({"string_key":)");
     stream.printf(R"("Arduino library for parsing potentially huge json streams on devices with scarce memory",)");
-    
     const char block[] = R"("int_key":98765})";
-    stream.write(block, (size_t)sizeof(block) - 1);
+    stream.write(block, sizeof(block) - 1);
 
-
+    
     EXPECT_FALSE(stream.hasError());
     EXPECT_EQ(stream.getWriteError(), 0);
 

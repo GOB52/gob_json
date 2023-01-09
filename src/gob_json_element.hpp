@@ -1,5 +1,6 @@
 /*!
   @file gob_json_element.hpp
+  @brief Helper for retrieving elements.
  */
 #ifndef GOB_JSON_ELEMENT_HPP
 #define GOB_JSON_ELEMENT_HPP
@@ -24,6 +25,8 @@ template <class T, size_t N> struct is_std_array<std::array<T, N> > : public std
 
 /*!
   @class ElementBase
+  @brief Base class
+  Call virtual store() => each _store() (SFINAE)
  */
 struct ElementBase
 {
@@ -37,18 +40,27 @@ struct ElementBase
 
 /*!
   @class Element
+  @brief Retriveing helper
   @tparam T Type of store value
  */
 template<typename T> struct Element : public ElementBase
 {
     T* value{}; // Pointer of store target.
 
+    /*! @brief Constructor
+      @param key JSON key
+      @param p Pointer of object
+     */
     Element(const char* key, T* p) : ElementBase(key), value(p) { assert(p); }
+    /*!
+      @param ev Value
+      @param index <0: Object >=0:Array
+     */
     virtual void store(const ElementValue& ev, const int index = -1) override { _store(ev, index); }
 
     ///@name Store functions for generic type.
     ///@{
-    //! @brief Integer
+    /*! @brief Integer */
     template<typename U = T,
              typename std::enable_if<!std::is_same<U, bool>::value && std::is_integral<U>::value, std::nullptr_t>::type = nullptr>
     void _store(const ElementValue& ev, const int)
@@ -87,7 +99,7 @@ template<typename T> struct Element : public ElementBase
     {
         *value = !ev.isString() ? ev.getFloat() : std::strtod(ev.toString().c_str(), nullptr);
     }
-    //! @brief Array or pointer of floating-points */
+    //! @brief Array or pointer of floating-points
     template<typename U = T,
              typename std::enable_if<std::is_pointer<typename std::decay<U>::type>::value && 
                                      std::is_floating_point<typename std::remove_pointer<typename std::decay<U>::type>::type>::value,

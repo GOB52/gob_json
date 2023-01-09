@@ -53,7 +53,7 @@ class StreamingParser
 
     /*! @brief Set handler */
     void setHandler(Handler* h) { handler = h; }
-    /*! Reset inner state.*/
+    /*! @brief Reset inner state.*/
     void reset();
 
     /*! @brief Parse 1 character */

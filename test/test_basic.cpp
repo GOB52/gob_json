@@ -393,3 +393,49 @@ TEST(Basic, CustomElements)
         EXPECT_EQ(tmp.tm_sec, 0);;
     }
 }
+
+
+namespace
+{
+const char bool_null_json[] =
+R"***(
+{
+  "bool_key_0": true,
+  "bool_key_1": false,
+  "null_i16": null
+}
+)***";
+
+struct TestHandler: public goblib::json::Handler
+{
+    virtual void startDocument() override{}
+    virtual void endDocument() override {}
+    virtual void startObject(const ElementPath& ) override {}
+    virtual void endObject(const ElementPath& ) override {}
+    virtual void startArray(const ElementPath& ) override {}
+    virtual void endArray(const ElementPath& ) override {}
+    virtual void whitespace(const char/*ch*/) override {}
+    virtual void value(const ElementPath& path, const ElementValue& value) override
+    {
+        if     (strcmp(path.getKey(),"bool_key_0") == 0) { b0 = value.getBool(); }
+        else if(strcmp(path.getKey(),"bool_key_1") == 0) { b1 = value.getBool(); }
+        else if(strcmp(path.getKey(),"null_i16"  ) == 0) { if(!value.isNull()) { i16 = value.getInt(); } }
+    }
+
+    bool b0{}, b1{true};
+    int16_t i16{42};
+};
+//
+}
+
+TEST(Basic, BoolNull)
+{
+        TestHandler handler;
+        goblib::json::StreamingParser parser(&handler);
+        for(auto& e: bool_null_json) { parser.parse(e); }
+
+        EXPECT_FALSE(parser.hasError());
+        EXPECT_TRUE(handler.b0);
+        EXPECT_FALSE(handler.b1);
+        EXPECT_EQ(handler.i16, 42);
+}

@@ -5,13 +5,15 @@
 #ifndef GOB_JSON_ARDUINO_HPP
 #define GOB_JSON_ARDUINO_HPP
 
-#ifdef ARDUINO
+#if defined(ARDUINO) || defined(DOXYGEN_PROCESS)
 
 #include <Stream.h>
 #include "gob_json.hpp"
 
 namespace goblib { namespace json {
-/*! @namespace arduino For arduino */
+/*!
+  @namespace arduino
+  @brief For arduino */
 namespace arduino {
 
 /*!
