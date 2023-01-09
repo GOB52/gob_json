@@ -1,32 +1,54 @@
 /*!
   @file gob_json_arduino.hpp
-  @brief For Arduino stream
+  @brief Comatible class of Arduino Stream.
  */
 #ifndef GOB_JSON_ARDUINO_HPP
 #define GOB_JSON_ARDUINO_HPP
+
 #ifdef ARDUINO
 
-#include <Print.h>
 #include <Stream.h>
-#include <Arduino.h>
 #include "gob_json.hpp"
 
 namespace goblib { namespace json {
+/*! @namespace arduino For arduino */
+namespace arduino {
 
-class ArudinoStreamParser: public Stream, public StreamingParser
+/*!
+  @class Stream
+  @brief Write stream derived from Arduino Stream
+ */
+class Stream : public ::Stream, public StreamingParser
 {
   public:
-    int available() override;
+    static constexpr int ERROR_PARSE_JSON = 52;
 
-    int read() override;
+    explicit Stream(goblib::json::Handler* h = nullptr) : ::Stream(), StreamingParser(h) {}
 
-    size_t write(const uint8_t *buffer, size_t size) override;
-    size_t write(uint8_t data) override;
+    ///@name override class Print
+    ///@{
+    virtual size_t write(uint8_t v) override
+    {
+        if(getWriteError()==0)
+        {
+            parse(v);
+            if(hasError()) { setWriteError(ERROR_PARSE_JSON); }
+        }
+        return (hasError() == false);
+    }
+    ///@}
 
-    void flush() override;
-    int peek() override;
+    using Print::write;
+    
+    ///@name override class Stream
+    ///@{
+    inline virtual int available() override { return (state != State::ERROR) || (state != State::DONE); }
+    inline virtual int peek() override { return 0; }
+    inline virtual int read() override { return 0; }
+    ///@}
 };
 //
-}}
+}}}
 #endif
+
 #endif

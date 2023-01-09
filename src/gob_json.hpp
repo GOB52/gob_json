@@ -29,8 +29,6 @@ namespace goblib {
 */
 namespace json {
 
-class Handler;
-
 #ifndef GOB_JSON_PARSER_BUFFER_MAX_LENGTH
 # pragma message "Buffer size as default"
 # define GOB_JSON_PARSER_BUFFER_MAX_LENGTH  (256)

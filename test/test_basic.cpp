@@ -8,6 +8,7 @@
 
 namespace
 {
+// Include 2 JSON documents.
 const char test_json[] =
 R"***(
 { "name"   : "John Smith",
