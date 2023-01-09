@@ -1,0 +1,22 @@
+{
+  "name": "gob_json",
+  "description": "Library for parsing potentially huge json streams on devices with scarce memory . Based on mrfaptastic/json-streaming-parser2, modified and extended independently.",
+  "keywords": "json, streaming-json",
+  "authors": {
+    "name": "GOB",
+    "url": "https://github.com/GOB52",
+    "maintainer": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GOB52/gob_json.git"
+  },
+  "version": "0.0.1",
+  "build": {
+    "libArchive": false
+  },
+  "headers": "gob_json.hpp",
+  "license": "MIT",
+  "platforms": "espressif32",
+  "frameworks": "arduino"
+}
