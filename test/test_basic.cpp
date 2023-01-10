@@ -397,12 +397,13 @@ TEST(Basic, CustomElements)
 
 namespace
 {
-const char bool_null_json[] =
+const char any_type_json[] =
 R"***(
 {
   "bool_key_0": true,
   "bool_key_1": false,
-  "null_i16": null
+  "null_i16": null,
+  "string": "漢字カナまじりANK☎️"
 }
 )***";
 
@@ -420,22 +421,25 @@ struct TestHandler: public goblib::json::Handler
         if     (strcmp(path.getKey(),"bool_key_0") == 0) { b0 = value.getBool(); }
         else if(strcmp(path.getKey(),"bool_key_1") == 0) { b1 = value.getBool(); }
         else if(strcmp(path.getKey(),"null_i16"  ) == 0) { if(!value.isNull()) { i16 = value.getInt(); } }
+        else if(strcmp(path.getKey(),"string"    ) == 0) { str = value.getString(); }
     }
 
     bool b0{}, b1{true};
     int16_t i16{42};
+    goblib::json::string_t str;
 };
 //
 }
 
-TEST(Basic, BoolNull)
+TEST(Basic, AnyType)
 {
-        TestHandler handler;
-        goblib::json::StreamingParser parser(&handler);
-        for(auto& e: bool_null_json) { parser.parse(e); }
+    TestHandler handler;
+    goblib::json::StreamingParser parser(&handler);
+    for(auto& e: any_type_json) { parser.parse(e); }
 
-        EXPECT_FALSE(parser.hasError());
-        EXPECT_TRUE(handler.b0);
-        EXPECT_FALSE(handler.b1);
-        EXPECT_EQ(handler.i16, 42);
+    EXPECT_FALSE(parser.hasError());
+    EXPECT_TRUE(handler.b0);
+    EXPECT_FALSE(handler.b1);
+    EXPECT_EQ(handler.i16, 42);
+    EXPECT_STREQ(handler.str.c_str(), "漢字カナまじりANK☎️");
 }
