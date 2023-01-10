@@ -9,8 +9,6 @@ namespace goblib { namespace json {
 
 void DelegateHandler::startObject(const ElementPath& path)
 {
-    //    printf("%s:[%s]\n", __func__, path.toString().c_str());
-
     // Delegate processing
     auto del = currentDelegater();
     if(del)
@@ -25,8 +23,6 @@ void DelegateHandler::startObject(const ElementPath& path)
 
 void DelegateHandler::endObject(const ElementPath& path)
 {
-    //    printf("%s:[%s]\n", __func__, path.toString().c_str());
-
     // Delegate processing
     auto del = currentDelegater();
     if(del)
@@ -39,8 +35,6 @@ void DelegateHandler::endObject(const ElementPath& path)
 
 void DelegateHandler::startArray(const ElementPath& path)
 {
-    //    printf("%s:[%s]\n", __func__, path.toString().c_str());
-
     // Delegate processing
     auto del = currentDelegater();
     if(del) { del->startArray(path); }
@@ -48,8 +42,6 @@ void DelegateHandler::startArray(const ElementPath& path)
 
 void DelegateHandler::endArray(const ElementPath& path)
 {
-    //    printf("%s:[%s]\n", __func__, path.toString().c_str());
-
     // Delegate processing
     auto del = currentDelegater();
     if(del) { del->endArray(path); }
@@ -57,8 +49,6 @@ void DelegateHandler::endArray(const ElementPath& path)
 
 void DelegateHandler::value(const ElementPath& path, const ElementValue& value)
 {
-    //    printf("%s:[%s]\n", __func__, path.toString().c_str());
-
     // Delegate processing
     auto del = currentDelegater();
     if(del) { del->value(path, value); }

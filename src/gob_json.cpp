@@ -22,23 +22,22 @@ void StreamingParser::reset()
     stackPos = 0;
 }
 
-#define PARSE_ERROR(fmt, ...) do       \
-{                                      \
-    GOB_JSON_LOGE(fmt, ##__VA_ARGS__); \
-    state = State::ERROR;              \
+#define PARSE_ERROR(estr, ch, pos, path) \
+do \
+{  \
+    GOB_JSON_LOGE("%s at <%c>:0x%x pos:%zu [%s]", estr, ch, ch, pos, path.toString().c_str()); \
+    state = State::ERROR; \
 }while(0)
-
 
 void StreamingParser::parse(const char ch)
 {
     assert(handler && "handler must be set");
     if(!handler || state == State::ERROR) { return; }
 
-    const int c = std::is_signed<char>::value ? (unsigned char)ch : ch; // Handling the case where char is signed.
+    const int c = curCh = std::is_signed<char>::value ? (unsigned char)ch : ch; // Handling the case where char is signed.
 
-    //printf("stack[%d]:%d <%c>\n", stackPos, (stackPos >= 0) ? (int)stack[stackPos-1] : -1, ch);
-    
-    //System.out.print(c);
+    //GOB_JSON_LOGI("stack[%d]:%d <%c>0x%x", stackPos, (stackPos > 0) ? (int)stack[stackPos-1] : -1, ch, ch);
+
     // valid whitespace characters in JSON (from RFC4627 for JSON) include:
     // space, horizontal tab, line feed or new line, and carriage return.
     // thanks:
@@ -55,7 +54,7 @@ void StreamingParser::parse(const char ch)
         } else if (c == '\\') {
             state = State::START_ESCAPE;
         } else if ((c < 0x1f) || (c == 0x7f)) {
-            PARSE_ERROR("Unescaped control character encountered: <0x%x> pos:%zu", c, characterCounter);
+            PARSE_ERROR("Unescaped control character encountered", c, characterCounter, path);
             break;
             //throw new RuntimeException("Unescaped control character encountered: " + c + " at position" + characterCounter);
         } else {
@@ -77,14 +76,14 @@ void StreamingParser::parse(const char ch)
         } else if (c == '"') {
             startKey();
         } else {
-            PARSE_ERROR("Start of string expected for object key. Instead got <%x> pos:%zu", c, characterCounter);
+            PARSE_ERROR("Start of string expected for object key. Instead got", c, characterCounter, path);
             break;
             //throw new RuntimeException("Start of string expected for object key. Instead got: " + c + " at position" + characterCounter);
         }
         break;
     case State::END_KEY:
         if (c != ':') {
-            PARSE_ERROR("Expected ':' after key. Instead got <%x> pos:%zu", c, characterCounter);
+            PARSE_ERROR("Expected ':' after key. Instead got", c, characterCounter, path);
             break;
             //throw new RuntimeException("Expected ':' after key. Instead got " + c + " at position" + characterCounter);
         }
@@ -109,7 +108,7 @@ void StreamingParser::parse(const char ch)
     case State::AFTER_VALUE: {
         if(stackPos <= 0)
         {
-            PARSE_ERROR("stackPos <= 0 <%c> pos:%zu", c, characterCounter);
+            PARSE_ERROR("stackPos <= 0", c, characterCounter, path);
             break;
         }
         // not safe for size == 0!!!
@@ -130,13 +129,13 @@ void StreamingParser::parse(const char ch)
             } else if (c == ',') {
                 state = State::IN_ARRAY;
             } else {
-                PARSE_ERROR("Expected ',' or ']' while parsing array. Got: <%c> pos:%zu", c, characterCounter);
+                PARSE_ERROR("Expected ',' or ']' while parsing array. Got", c, characterCounter, path);
                 break;
                 //throw new RuntimeException("Expected ',' or ']' while parsing array. Got: " + c + ". " + characterCounter);
 
             }
         } else {
-            PARSE_ERROR("Finished a literal, but unclear what state to move to. Last state: pos:%zu", characterCounter);
+            PARSE_ERROR("Finished a literal, but unclear what state to move to. Last state:", c, characterCounter, path);
             break;
             //throw new RuntimeException("Finished a literal, but unclear what state to move to. Last state: " + characterCounter);
         }
@@ -147,11 +146,11 @@ void StreamingParser::parse(const char ch)
             increaseBufferPointer();
         } else if (c == '.') {
             if (doesCharArrayContain(buffer, bufferPos, '.')) {
-                PARSE_ERROR("Cannot have multiple decimal points in a number. pos:%zu", characterCounter);
+                PARSE_ERROR("Cannot have multiple decimal points in a number", c, characterCounter, path);
                 break;
                 //throw new RuntimeException("Cannot have multiple decimal points in a number. " + characterCounter);
             } else if (doesCharArrayContain(buffer, bufferPos, 'e')) {
-                PARSE_ERROR("Cannot have a decimal point in an exponent. pos:%zu", characterCounter);
+                PARSE_ERROR("Cannot have a decimal point in an exponent", c, characterCounter, path);
                 break;
                 //throw new RuntimeException("Cannot have a decimal point in an exponent." + characterCounter);
             }
@@ -159,7 +158,7 @@ void StreamingParser::parse(const char ch)
             increaseBufferPointer();
         } else if (c == 'e' || c == 'E') {
             if (doesCharArrayContain(buffer, bufferPos, 'e')) {
-                PARSE_ERROR("Cannot have multiple exponents in a number. pos:%zu", characterCounter);
+                PARSE_ERROR("Cannot have multiple exponents in a number", c, characterCounter, path);
                 break;
                 //throw new RuntimeException("Cannot have multiple exponents in a number. " + characterCounter);
             }
@@ -168,7 +167,7 @@ void StreamingParser::parse(const char ch)
         } else if (c == '+' || c == '-') {
             char last = buffer[bufferPos - 1];
             if (!(last == 'e' || last == 'E')) {
-                PARSE_ERROR("Can only have '+' or '-' after the 'e' or 'E' in a number. pos:%zu", characterCounter);
+                PARSE_ERROR("Can only have '+' or '-' after the 'e' or 'E' in a number", c, characterCounter, path);
                 break;
                 //throw new RuntimeException("Can only have '+' or '-' after the 'e' or 'E' in a number." + characterCounter);
             }
@@ -232,7 +231,7 @@ void StreamingParser::increaseBufferPointer() {
 void StreamingParser::endString() {
     if(stackPos <= 0)
     {
-        PARSE_ERROR("stackPos <= 0 pos:%zu", characterCounter);
+        PARSE_ERROR("stackPos <= 0", curCh, characterCounter, path);
         return;
     }
     auto popped = stack[stackPos - 1];
@@ -246,7 +245,7 @@ void StreamingParser::endString() {
         handler->value(path, elementValue.with(buffer));
         state = State::AFTER_VALUE;
     } else {
-        PARSE_ERROR("Unexpected end of string. pos:%zu", characterCounter);
+        PARSE_ERROR("Unexpected end of string", curCh, characterCounter, path);
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Unexpected end of string.");
     }
@@ -274,7 +273,7 @@ void StreamingParser::startValue(char c) {
         buffer[bufferPos] = c;
         increaseBufferPointer();
     } else {
-        PARSE_ERROR("Unexpected character for value: <%c>", c);
+        PARSE_ERROR("Unexpected character for value", c, characterCounter, path);
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Unexpected character for value: ".$c);
     }
@@ -288,14 +287,14 @@ bool StreamingParser::isDigit(char c) {
 void StreamingParser::endArray() {
     if(stackPos <= 0)
     {
-        PARSE_ERROR("stackPos <= 0 pos:%zu", characterCounter);
+        PARSE_ERROR("stackPos <= 0", curCh, characterCounter, path);
         return;
     }
     auto popped = stack[stackPos - 1];
     stackPos--;
     path.pop();
     if (popped != Stack::ARRAY) {
-        PARSE_ERROR("Unexpected end of array encountered. pos:%zu", characterCounter);
+        PARSE_ERROR("Unexpected end of array encountered", curCh, characterCounter, path);
         return;
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Unexpected end of array encountered.");
@@ -310,7 +309,7 @@ void StreamingParser::endArray() {
 void StreamingParser::startKey() {
     if(stackPos >= (int)sizeof(stack))
     {
-        PARSE_ERROR("stack overflow pos:%zu", characterCounter);
+        PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
     }
     stack[stackPos] = Stack::KEY;
@@ -323,7 +322,7 @@ void StreamingParser::endObject() {
     stackPos--;
     path.pop();
     if (popped != Stack::OBJECT) {
-        PARSE_ERROR("Unexpected end of object encountered. poped %d pos:%zu", (int)popped, characterCounter);
+        PARSE_ERROR("Unexpected end of object encountered", curCh, characterCounter, path);
         return;
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Unexpected end of object encountered.");
@@ -363,7 +362,7 @@ void StreamingParser::processEscapeCharacters(char c) {
     } else if (c == 'u') {
         state = State::UNICODE;
     } else {
-        PARSE_ERROR("Expected escaped character after backslash. Got: <%c>", c);
+        PARSE_ERROR("Expected escaped character after backslash. Got:", c, characterCounter, path);
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Expected escaped character after backslash. Got: ".$c);
     }
@@ -374,7 +373,7 @@ void StreamingParser::processEscapeCharacters(char c) {
 
 void StreamingParser::processUnicodeCharacter(char c) {
     if (!isHexCharacter(c)) {
-        PARSE_ERROR("Expected hex character for escaped Unicode character. Unicode parsed. <%c>", c);
+        PARSE_ERROR("Expected hex character for escaped Unicode character. Unicode parsed", c, characterCounter, path);
         return;
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Expected hex character for escaped Unicode character. Unicode parsed: "
@@ -443,7 +442,7 @@ bool StreamingParser::doesCharArrayContain(char myArray[], int length, char c) {
 void StreamingParser::endUnicodeSurrogateInterstitial() {
     char unicodeEscape = unicodeEscapeBuffer[unicodeEscapeBufferPos - 1];
     if (unicodeEscape != 'u') {
-        PARSE_ERROR("Expected '\\u' following a Unicode high surrogate. pos:%zu", characterCounter);
+        PARSE_ERROR("Expected '\\u' following a Unicode high surrogate", curCh, characterCounter, path);
         return;
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Expected '\\u' following a Unicode high surrogate. Got: " .
@@ -518,7 +517,7 @@ void StreamingParser::endTrue() {
     if(strcmp(buffer, "true") == 0) {
         handler->value(path, elementValue.with(true));
     } else {
-        PARSE_ERROR("Expected 'true'. pos:%zu", characterCounter);
+        PARSE_ERROR("Expected 'true'", curCh, characterCounter, path);
         return;
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Expected 'true'. Got: ".$true);
@@ -532,7 +531,7 @@ void StreamingParser::endFalse() {
     if(strcmp(buffer, "false") == 0) {
         handler->value(path, elementValue.with(false));
     } else {
-        PARSE_ERROR("Expected 'false'. pos:%zu", characterCounter);
+        PARSE_ERROR("Expected 'false'", curCh, characterCounter, path);
         return;
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Expected 'true'. Got: ".$true);
@@ -546,7 +545,7 @@ void StreamingParser::endNull() {
     if(strcmp(buffer, "null") == 0) {
         handler->value(path, elementValue.with());
     } else {
-        PARSE_ERROR("Expected 'null'. pos:%zu", characterCounter);
+        PARSE_ERROR("Expected 'null'", curCh, characterCounter, path);
         return;
         // throw new ParsingError($this->_line_number, $this->_char_number,
         // "Expected 'true'. Got: ".$true);
@@ -558,7 +557,7 @@ void StreamingParser::endNull() {
 void StreamingParser::startArray() {
     if(stackPos >= (int)sizeof(stack))
     {
-        PARSE_ERROR("stack overflow pos:%zu", characterCounter);
+        PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
     }
     handler->startArray(path);
@@ -571,7 +570,7 @@ void StreamingParser::startArray() {
 void StreamingParser::startObject() {
     if(stackPos >= (int)sizeof(stack))
     {
-        PARSE_ERROR("stack overflow pos:%zu", characterCounter);
+        PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
     }
     handler->startObject(path);
@@ -584,7 +583,7 @@ void StreamingParser::startObject() {
 void StreamingParser::startString() {
     if(stackPos >= (int)sizeof(stack))
     {
-        PARSE_ERROR("stack overflow pos:%zu", characterCounter);
+        PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
     }
     stack[stackPos] = Stack::STRING;

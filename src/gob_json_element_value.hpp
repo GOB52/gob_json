@@ -82,6 +82,8 @@ struct ElementValue
 
     ///@name Detect type
     ///@{
+    /*! @brief Gets the type */
+    inline Type getType() const { return type; }
     /*! @brief Check type */
     inline bool isType(const Type t) const { return type == t; }
     /*! @brief Integer value? */

@@ -152,6 +152,7 @@ class StreamingParser
     int unicodeHighSurrogate{0};
 
     size_t characterCounter{0};
+    int curCh{}; // for error information.
 };
 //
 }}
