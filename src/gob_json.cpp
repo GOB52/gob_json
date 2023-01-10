@@ -12,6 +12,10 @@
 
 namespace goblib { namespace json {
 
+// Size of array.
+template <class C> constexpr auto size(const C& c) -> decltype(c.size()) { return c.size(); }
+template<typename T, size_t N> constexpr auto size(const T(&)[N]) noexcept -> size_t { return N; }
+
 void StreamingParser::reset()
 {
     state = State::START_DOCUMENT;
@@ -307,7 +311,7 @@ void StreamingParser::endArray() {
 }
 
 void StreamingParser::startKey() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
@@ -555,7 +559,7 @@ void StreamingParser::endNull() {
 }
 
 void StreamingParser::startArray() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
@@ -568,7 +572,7 @@ void StreamingParser::startArray() {
 }
 
 void StreamingParser::startObject() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
@@ -581,7 +585,7 @@ void StreamingParser::startObject() {
 }
 
 void StreamingParser::startString() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;

@@ -11,6 +11,28 @@
 
 namespace goblib { namespace json {
 
+#ifndef GOB_JSON_STRINGIFY
+# define GOB_JSON_STRINGIFY(x) GOB_JSON_STRINGIFY_AGAIN(x)
+#endif
+#ifndef GOB_JSON_STRINGIFY_AGAIN
+# define GOB_JSON_STRINGIFY_AGAIN(x) #x
+#endif
+
+#ifndef GOB_JSON_PARSER_KEY_MAX_LENGTH
+# pragma message "Key length as default"
+# define GOB_JSON_PARSER_KEY_MAX_LENGTH  (32)
+#else
+# pragma message "Defined key length=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_KEY_MAX_LENGTH)
+#endif
+
+// For ElementPath::selectors and StreamingParser::stack
+#ifndef GOB_JSON_PARSER_STACK_MAX_DEPTH
+# pragma message "Stack max depth as default"
+# define GOB_JSON_PARSER_STACK_MAX_DEPTH (20)
+#else
+# pragma message "Defined stack max depth=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_STACK_MAX_DEPTH)
+#endif
+
 /*!
   @class ElementSelector
   @brief Unified element selector.
@@ -36,7 +58,7 @@ class ElementSelector
 
   private: 
     int index{-1};
-    char key[32]{0,};
+    char key[GOB_JSON_PARSER_KEY_MAX_LENGTH]{0,};
     friend class ElementPath;
     friend class StreamingParser;
 };
@@ -97,7 +119,7 @@ class ElementPath
   private:
     int count{0};
     ElementSelector* current{nullptr};
-    ElementSelector selectors[20]{};
+    ElementSelector selectors[GOB_JSON_PARSER_STACK_MAX_DEPTH]{};
     friend class StreamingParser;
 };
 

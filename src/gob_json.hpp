@@ -29,13 +29,18 @@ namespace goblib {
 */
 namespace json {
 
+#ifndef GOB_JSON_STRINGIFY
+# define GOB_JSON_STRINGIFY(x) GOB_JSON_STRINGIFY_AGAIN(x)
+#endif
+#ifndef GOB_JSON_STRINGIFY_AGAIN
+# define GOB_JSON_STRINGIFY_AGAIN(x) #x
+#endif
+
 #ifndef GOB_JSON_PARSER_BUFFER_MAX_LENGTH
-# pragma message "Buffer size as default"
+# pragma message "Buffer length as default"
 # define GOB_JSON_PARSER_BUFFER_MAX_LENGTH  (256)
 #else
-# define GOB_JSON_STRINGIFY(x) GOB_JSON_STRINGIFY_AGAIN(x)
-# define GOB_JSON_STRINGIFY_AGAIN(x) #x
-# pragma message "Buffer size set by build option=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_BUFFER_MAX_LENGTH)
+# pragma message "Defined buffer length=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_BUFFER_MAX_LENGTH)
 #endif
 
 /*!
@@ -136,13 +141,13 @@ class StreamingParser
     ElementPath path{};
 
     State state{State::START_DOCUMENT};
-    Stack stack[20]{};
+    Stack stack[GOB_JSON_PARSER_STACK_MAX_DEPTH]{};
     int stackPos{0};
     
     bool recursive{false};
     bool doEmitWhitespace{false};
 
-    char buffer[GOB_JSON_PARSER_BUFFER_MAX_LENGTH];
+    char buffer[GOB_JSON_PARSER_BUFFER_MAX_LENGTH]{};
     int bufferPos{0};
 
     char unicodeEscapeBuffer[10];

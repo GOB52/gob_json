@@ -94,8 +94,8 @@ class TestHandler : public goblib::json::Handler
     std::vector<bool> ba2;
 
     int32_t i{};
-    int32_t ia0[9]{};
-    std::array<int32_t,9> ia1;
+    int32_t ia0[3]{};
+    std::array<int32_t,3> ia1;
     std::vector<int32_t> ia2;
 
     float f{};
