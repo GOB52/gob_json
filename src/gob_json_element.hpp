@@ -188,7 +188,12 @@ template<typename T> struct Element : public ElementBase
     void _store(const ElementValue& ev, const int)
     {
         //GOB_JSON_LOGD("bool v");
+#ifdef __clang__
+        // std::vector<bool> is different from ordinary vector because it is specialized. emplace_back cannot use Clang.
+        value->push_back(!ev.isString() ? ev.getBool() : (ev.toString() == "true"));        
+#else        
         value->emplace_back(!ev.isString() ? ev.getBool() : (ev.toString() == "true"));
+#endif
     }
     
     //@brief string_t (String or std::string)
