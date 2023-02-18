@@ -37,10 +37,10 @@ namespace json {
 #endif
 
 #ifndef GOB_JSON_PARSER_BUFFER_MAX_LENGTH
-# pragma message "Buffer length as default"
+# pragma message "[gob_json] Buffer length as default"
 # define GOB_JSON_PARSER_BUFFER_MAX_LENGTH  (256)
 #else
-# pragma message "Defined buffer length=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_BUFFER_MAX_LENGTH)
+# pragma message "[gob_json] Defined buffer length=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_BUFFER_MAX_LENGTH)
 #endif
 
 /*!
@@ -95,7 +95,7 @@ class StreamingParser
     void endTrue();
     void endDocument();
     void endUnicodeSurrogateInterstitial();
-    void endUnicodeCharacter(int codepoint);
+    void endUnicodeCharacter(uint32_t codepoint);
 
     void increaseBufferPointer();
     void processEscapeCharacters(char c);
@@ -154,7 +154,7 @@ class StreamingParser
     int unicodeEscapeBufferPos{0};;
     char unicodeBuffer[10];
     int unicodeBufferPos{0};
-    int unicodeHighSurrogate{0};
+    int unicodeHighSurrogate{-1};
 
     size_t characterCounter{0};
     int curCh{}; // for error information.

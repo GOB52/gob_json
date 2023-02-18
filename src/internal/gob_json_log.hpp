@@ -16,14 +16,17 @@
 #   include <esp32-hal-log.h>
 #   ifndef GOB_JSON_LOG_LEVEL
 #     if defined(LOG_LOCAL_LEVEL)
-#       pragma message "[JSON]] Using LOG_LOCAL_LEVEL"
+#       pragma message "[gob_json Using LOG_LOCAL_LEVEL"
 #       define GOB_JSON_LOG_LEVEL (LOG_LOCAL_LEVEL)
 #     elif defined(CORE_DEBUG_LEVEL)
-#       pragma message "[JSON] Using CORE_DEBUG_LEVEL"
+#       pragma message "[gob_json] Using CORE_DEBUG_LEVEL"
 #       define GOB_JSON_LOG_LEVEL (CORE_DEBUG_LEVEL)
+#     else
+#       pragma message "[gob_json] Using loglevel 3"
+#       define GOB_JSON_LOG_LEVEL (3))
 #     endif
 #   else
-#     pragma message "[JSON] Using defined log level"
+#     pragma message "[gob_json] Using defined log level"
 #   endif
 /*! @brief Error */
 #   define GOB_JSON_LOGE(format, ...) do { if(GOB_JSON_LOG_LEVEL >= ESP_LOG_ERROR)   { log_printf(ARDUHAL_LOG_FORMAT(E, format), ##__VA_ARGS__); } } while(0)
@@ -40,7 +43,10 @@
 
 #   include <cstdio>
 #   ifndef GOB_JSON_LOG_LEVEL
+#     pragma message "[gob_json] Using loglevel 3"
 #     define GOB_JSON_LOG_LEVEL (3)
+#   else
+#     pragma message "[gob_json] Using defined log level"
 #   endif
 
 #   define GOB_JSON_LOG(fmt, ...) do { printf("%s:%d ", __FILE__, __LINE__); printf(fmt, ##__VA_ARGS__); putchar('\n'); }while(0)

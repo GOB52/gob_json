@@ -61,7 +61,7 @@ Log output when internal errors occur and added detection mechanism.
 ### Added a mechanism to help determine keys and retrieve values
 if elseif elseif elseif elseif elseif elseif elseif elseif elseif elseif elseif elseif ... OMG!  
 Added a helper for retrive values and a delegation handler for processing per JSON object.  
-see also [test_element.cpp](test/test_element.cpp)
+see also [test_element.cpp](test/test_element.cpp), [test_basic.cpp](test/test_basic.cpp)
 
 ### Unit test support with GoogleTest
 Even small test cases are useful.

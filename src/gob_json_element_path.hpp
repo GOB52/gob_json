@@ -19,18 +19,18 @@ namespace goblib { namespace json {
 #endif
 
 #ifndef GOB_JSON_PARSER_KEY_MAX_LENGTH
-# pragma message "Key length as default"
+# pragma message "[gob_json] Key length as default"
 # define GOB_JSON_PARSER_KEY_MAX_LENGTH  (32)
 #else
-# pragma message "Defined key length=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_KEY_MAX_LENGTH)
+# pragma message "[gob_json] Defined key length=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_KEY_MAX_LENGTH)
 #endif
 
 // For ElementPath::selectors and StreamingParser::stack
 #ifndef GOB_JSON_PARSER_STACK_MAX_DEPTH
-# pragma message "Stack max depth as default"
+# pragma message "[gob_json] Stack max depth as default"
 # define GOB_JSON_PARSER_STACK_MAX_DEPTH (20)
 #else
-# pragma message "Defined stack max depth=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_STACK_MAX_DEPTH)
+# pragma message "[gob_json] Defined stack max depth=" GOB_JSON_STRINGIFY(GOB_JSON_PARSER_STACK_MAX_DEPTH)
 #endif
 
 /*!
