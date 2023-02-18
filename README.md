@@ -61,7 +61,7 @@ Log output when internal errors occur and added detection mechanism.
 ### Added a mechanism to help determine keys and retrieve values
 if elseif elseif elseif elseif elseif elseif elseif elseif elseif elseif elseif elseif ... OMG!  
 Added a helper for retrive values and a delegation handler for processing per JSON object.  
-see also ValuesHandler in [test_basic.cpp](test/test_basic.cpp)
+see also [test_element.cpp](test/test_element.cpp), [test_basic.cpp](test/test_basic.cpp)
 
 ### Unit test support with GoogleTest
 Even small test cases are useful.
@@ -77,6 +77,22 @@ If you are using PlatformIO, you can write the following to download automatical
 ```ini
 lib_deps = https://github.com/GOB52/gob_json.git
 ```
+
+## Setting
+The build option allows you to set several items.
+
+|symbol| description|default value|
+|---|---|---|
+|GOB_JSON_PARSER_BUFFER_MAX_LENGTH| Token buffer size| 256|
+|GOB_JSON_PARSER_KEY_MAX_LENGTH| JSON key token buffer size|32|
+|GOB_JSON_PARSER_STACK_MAX_DEPTH|Maximum nesting level of JSON object/array|20|
+
+```ini
+build_flags = -D GOB_JSON_PARSER_BUFFER_MAX_LENGTH=384 
+  -D GOB_JSON_PARSER_KEY_MAX_LENGTH=64
+  -D GOB_JSON_PARSER_STACK_MAX_DEPTH=16
+```
+
 ## Usage
 If you use it like json-streaming-parser2, rename the headers and types to include.
 

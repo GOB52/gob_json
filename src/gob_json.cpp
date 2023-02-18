@@ -12,6 +12,10 @@
 
 namespace goblib { namespace json {
 
+// Size of array.
+template <class C> constexpr auto size(const C& c) -> decltype(c.size()) { return c.size(); }
+template<typename T, size_t N> constexpr auto size(const T(&)[N]) noexcept -> size_t { return N; }
+
 void StreamingParser::reset()
 {
     state = State::START_DOCUMENT;
@@ -93,12 +97,15 @@ void StreamingParser::parse(const char ch)
         startValue(c);
         break;
     case State::START_ESCAPE:
+        //        GOB_JSON_LOGV("startEscape");
         processEscapeCharacters(c);
         break;
     case State::UNICODE:
+        //        GOB_JSON_LOGV("unicode:[%c]:0x%02x", c,c);
         processUnicodeCharacter(c);
         break;
     case State::UNICODE_SURROGATE:
+        //        GOB_JSON_LOGV("surrogate:[%c]:0x%02x", c,c);
         unicodeEscapeBuffer[unicodeEscapeBufferPos] = c;
         unicodeEscapeBufferPos++;
         if (unicodeEscapeBufferPos == 2) {
@@ -307,7 +314,7 @@ void StreamingParser::endArray() {
 }
 
 void StreamingParser::startKey() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
@@ -385,28 +392,18 @@ void StreamingParser::processUnicodeCharacter(char c) {
 
     if (unicodeBufferPos == 4) {
         int codepoint = getHexArrayAsDecimal(unicodeBuffer, unicodeBufferPos);
-        endUnicodeCharacter(codepoint);
-        return;
-        /*if (codepoint >= 0xD800 && codepoint < 0xDC00) {
-          unicodeHighSurrogate = codepoint;
-          unicodeBufferPos = 0;
-          state = State::UNICODE_SURROGATE;
-          } else if (codepoint >= 0xDC00 && codepoint <= 0xDFFF) {
-          if (unicodeHighSurrogate == -1) {
-          // throw new ParsingError($this->_line_number,
-          // $this->_char_number,
-          // "Missing high surrogate for Unicode low surrogate.");
-          }
-          int combinedCodePoint = ((unicodeHighSurrogate - 0xD800) * 0x400) + (codepoint - 0xDC00) + 0x10000;
-          endUnicodeCharacter(combinedCodePoint);
-          } else if (unicodeHighSurrogate != -1) {
-          // throw new ParsingError($this->_line_number,
-          // $this->_char_number,
-          // "Invalid low surrogate following Unicode high surrogate.");
-          endUnicodeCharacter(codepoint);
-          } else {
-          endUnicodeCharacter(codepoint);
-          }*/
+        if(state != State::UNICODE_SURROGATE)
+        {
+            if (codepoint >= 0xD800 && codepoint < 0xDC00) {
+                unicodeHighSurrogate = codepoint;
+                unicodeBufferPos = 0;
+                state = State::UNICODE_SURROGATE;
+            }
+            else
+            {
+                endUnicodeCharacter(codepoint);
+            }
+        }
     }
 }
 bool StreamingParser::isHexCharacter(char c) {
@@ -555,7 +552,7 @@ void StreamingParser::endNull() {
 }
 
 void StreamingParser::startArray() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
@@ -568,7 +565,7 @@ void StreamingParser::startArray() {
 }
 
 void StreamingParser::startObject() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
@@ -581,7 +578,7 @@ void StreamingParser::startObject() {
 }
 
 void StreamingParser::startString() {
-    if(stackPos >= (int)sizeof(stack))
+    if(stackPos >= (int)size(stack))
     {
         PARSE_ERROR("stack overflow", curCh, characterCounter, path);
         return;
@@ -597,19 +594,37 @@ void StreamingParser::startNumber(char c) {
     increaseBufferPointer();
 }
 
-void StreamingParser::endUnicodeCharacter(int codepoint) {
-    if (codepoint < 0x80){
-        buffer[bufferPos] = (char) (codepoint);
-    } else if (codepoint <= 0x800){
-        buffer[bufferPos] = (char) ((codepoint >> 6) | 0b11000000);
-        increaseBufferPointer();
-        buffer[bufferPos] = (char) ((codepoint & 0b00111111) | 0b10000000);
-    } else if (codepoint == 0x2019){
-        buffer[bufferPos] = '\''; // \u2019 ’
-    } else {
-        buffer[bufferPos] = ' ';
+void StreamingParser::endUnicodeCharacter(uint32_t cp) {
+    // UTF-32 to UTF-8
+    constexpr uint8_t mask = 0xBF;
+    constexpr uint8_t mark_bit = 0x80;
+    constexpr uint8_t markTable[] = { 0x00, 0x00, 0xC0, 0xE0, 0xF0, 0xF8, 0xFC };
+
+    uint8_t length{3};
+    uint8_t buf[8]{};
+
+    //    GOB_JSON_LOGV("cp:%x", cp);
+
+    if(unicodeHighSurrogate != -1)
+    {
+        uint32_t high = unicodeHighSurrogate;
+        uint32_t low = cp;
+        cp = ((high - 0xD800) << 10) + (low - 0xDC00) + 0x10000;
+        //        GOB_JSON_LOGV("SP:high:%x low:%x => %x", high, low, cp);
     }
-    increaseBufferPointer();
+    
+    if(cp < 0x80) { length = 1; }
+    else if(cp < 0x800) { length = 2; }
+    else if(cp < 0x10000) { length = 3; }
+    else if(cp < 0x110000) { length = 4; }
+    for(uint8_t i = length; i > 0 ; --i)
+    {
+        buf[i-1] = static_cast<uint8_t>( (i==1) ? (cp | markTable[length]) : ((cp | mark_bit) & mask) );
+        cp >>= 6;
+    }
+    auto p = buf;
+    while(length--) { buffer[bufferPos] = *p++; increaseBufferPointer(); }
+   
     unicodeBufferPos = 0;
     unicodeHighSurrogate = -1;
     state = State::IN_STRING;

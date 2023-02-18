@@ -3,7 +3,9 @@
 
 #include <gob_json.hpp>
 #include <gob_json_element.hpp>
+#include <gob_json_delegate_handler.hpp>
 
+// TEST(Element, Basic)
 namespace
 {
 const char test_json[] =
@@ -94,8 +96,8 @@ class TestHandler : public goblib::json::Handler
     std::vector<bool> ba2;
 
     int32_t i{};
-    int32_t ia0[9]{};
-    std::array<int32_t,9> ia1;
+    int32_t ia0[3]{};
+    std::array<int32_t,3> ia1;
     std::vector<int32_t> ia2;
 
     float f{};
@@ -175,5 +177,165 @@ TEST(Element, Basic)
         EXPECT_STREQ(handler.sa2[0].c_str(), "C");
         EXPECT_STREQ(handler.sa2[1].c_str(), "う");
         EXPECT_STREQ(handler.sa2[2].c_str(), "😄");
+    }
+}
+
+// TEST(Element, Custom)
+namespace
+{
+// Nested object and custom type values.
+const char custom_types_json[] =
+R"***(
+{
+  "rgba": "##12abcdef",
+  "datetime":
+  {
+    "start_at": "2009-08-07T12:34:56",
+    "end_at": "2009-08-07T13:57:00"
+  }
+}
+)***";
+//
+}
+
+// RGBA color
+struct RGBA
+{
+    static RGBA parse(const char* str)
+    {
+        int rr,gg,bb,aa;
+        sscanf(str, "##%02x%02x%02x%02x", &aa, &rr, &gg, &bb);
+        return RGBA(rr,gg,bb,aa);
+    }
+    RGBA() : RGBA(0,0,0,0) {}
+    RGBA(uint8_t rr, uint8_t gg, uint8_t bb, uint8_t aa) : r(rr), g(gg), b(bb), a(aa) {}
+    uint8_t r{}, g{}, b{}, a{};
+};
+
+// Wrapping time_t (time_t is typedefed some integer, So to be a separate type.
+struct Time_t
+{
+    static Time_t parse(const char* str)
+    {
+        struct tm tmp{};
+        strptime(str, "%FT%T", &tmp);
+        auto tt = mktime(&tmp);
+        return Time_t(tt);
+    }
+    explicit Time_t(const time_t tt) : t(tt) {}
+    Time_t() : Time_t(0) {}
+    time_t t{};
+};
+
+struct CustomTypes
+{
+    RGBA rgba{};
+    struct Datetime
+    {
+        Time_t start_at;
+        Time_t end_at;
+    } datetime;
+};
+
+// You can make the specific element helper
+template<typename T> struct CustomElement : public Element<T>
+{
+    CustomElement(const char*k, T* vp) : Element<T>(k, vp) {} // Need constructor
+    virtual void store(const ElementValue& ev, const int index = -1) override { _store(ev, index); }
+
+    // Declrare _store functions for each custom type.(SFINAE)
+    // For RGBA
+    template<typename U = T,
+             typename std::enable_if<std::is_same<U, RGBA>::value, std::nullptr_t>::type = nullptr>
+    void _store(const ElementValue& ev, const int)
+    {
+        *this->value = ev.isString() ? RGBA::parse(ev.getString()) : RGBA{};
+    }
+    // For Time_t
+    template<typename U = T,
+             typename std::enable_if<std::is_same<U, Time_t>::value, std::nullptr_t>::type = nullptr>
+    void _store(const ElementValue& ev, const int)
+    {
+        *this->value = ev.isString() ? Time_t::parse(ev.getString()) : Time_t{};
+    }
+};
+
+class CustomTypesHandler : public goblib::json::DelegateHandler
+{
+  public:
+    // The hierarchical structure shall be the same as in CustomTypes
+    struct CustomTypesDelegater : Delegater
+    {
+        struct DatetimeDelegater : Delegater
+        {
+            DatetimeDelegater(CustomTypes::Datetime& target) : _v(target) {}
+            virtual void value(const ElementPath& path, const ElementValue& value) override
+            {
+                CustomElement<decltype(_v.start_at)>  e_s    { "start_at", &_v.start_at };
+                CustomElement<decltype(_v.end_at)>    e_e    { "end_at",   &_v.end_at   };
+                ElementBase* tbl[] = { &e_s, &e_e };
+                for(auto& e : tbl) { if(*e == path.getKey()) { e->store(value, path.getIndex()); return; } }
+            }
+          private:
+            CustomTypes::Datetime& _v;
+        };
+
+        CustomTypesDelegater(CustomTypes& target) : _v(target) {}
+        virtual Delegater* startObject(const ElementPath& path) override
+        {
+            if(strcmp(path.getKey(),"datetime")==0) { return new DatetimeDelegater(_v.datetime); }
+            return Delegater::startObject(path);
+        }
+        virtual void value(const ElementPath& path, const ElementValue& value) override
+        {
+            CustomElement<decltype(_v.rgba)> e_rgba { "rgba",   &_v.rgba };
+            ElementBase* tbl[] = { &e_rgba };
+            for(auto& e : tbl) { if(*e == path.getKey()) { e->store(value, path.getIndex()); return; } }
+        }
+      private:
+        CustomTypes& _v;
+    };
+
+    CustomTypesHandler(CustomTypes& v) : _value(v) {}
+    void startObject(const ElementPath& path) override
+    {
+        if(path.getCount() == 0) { pushDelegater(new CustomTypesDelegater(_value)); return; }
+        DelegateHandler::startObject(path);
+    }
+  private:
+    CustomTypes& _value;
+};
+
+TEST(Element, Custom)
+{
+    {
+        CustomTypes cs{};
+        CustomTypesHandler handler(cs);
+        goblib::json::StreamingParser parser(&handler);
+        for(auto& e: custom_types_json) { parser.parse(e); }
+
+        EXPECT_FALSE(parser.hasError());
+
+        EXPECT_EQ(cs.rgba.r, 0xab);
+        EXPECT_EQ(cs.rgba.g, 0xcd);
+        EXPECT_EQ(cs.rgba.b, 0xef);
+        EXPECT_EQ(cs.rgba.a, 0x12);
+
+        struct tm tmp;
+        tmp = *localtime(&cs.datetime.start_at.t);
+        EXPECT_EQ(tmp.tm_year + 1900, 2009);
+        EXPECT_EQ(tmp.tm_mon + 1, 8);
+        EXPECT_EQ(tmp.tm_mday, 7);
+        EXPECT_EQ(tmp.tm_hour,12);
+        EXPECT_EQ(tmp.tm_min, 34);        
+        EXPECT_EQ(tmp.tm_sec, 56);
+
+        tmp = *localtime(&cs.datetime.end_at.t);
+        EXPECT_EQ(tmp.tm_year + 1900, 2009);
+        EXPECT_EQ(tmp.tm_mon + 1, 8);
+        EXPECT_EQ(tmp.tm_mday, 7);
+        EXPECT_EQ(tmp.tm_hour,13);
+        EXPECT_EQ(tmp.tm_min, 57);        
+        EXPECT_EQ(tmp.tm_sec, 0);;
     }
 }
